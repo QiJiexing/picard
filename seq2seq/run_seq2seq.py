@@ -10,6 +10,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+print("change path")
+sys.path.append('/home/jxqi/unified_cosql/picard') # 这里填写你自己下载的picard的路径
+
 import os
 import json
 from pathlib import Path
@@ -30,6 +33,8 @@ from seq2seq.utils.dataset import DataTrainingArguments, DataArguments
 from seq2seq.utils.dataset_loader import load_dataset
 from seq2seq.utils.spider import SpiderTrainer
 from seq2seq.utils.cosql import CoSQLTrainer
+from seq2seq.utils.cosql_response import CoSQLResponseTrainer
+from seq2seq.utils.cosql_intent import CoSQLIntentTrainer
 
 
 def main() -> None:
@@ -78,7 +83,7 @@ def main() -> None:
         if "MLFLOW_EXPERIMENT_ID" in os.environ:
             init_args["group"] = os.environ["MLFLOW_EXPERIMENT_ID"]
         wandb.init(
-            project=os.getenv("WANDB_PROJECT", "text-to-sql"),
+            project=os.getenv("WANDB_PROJECT", "unified-cosql"),
             name=training_args.run_name,
             **init_args,
         )
@@ -199,6 +204,10 @@ def main() -> None:
             trainer = SpiderTrainer(**trainer_kwargs)
         elif data_args.dataset in ["cosql", "cosql+spider"]:
             trainer = CoSQLTrainer(**trainer_kwargs)
+        elif data_args.dataset in ["cosql_response"]:
+            trainer = CoSQLResponseTrainer(**trainer_kwargs)
+        elif data_args.dataset in ["cosql_intent"]:
+            trainer = CoSQLIntentTrainer(**trainer_kwargs)
         else:
             raise NotImplementedError()
 

@@ -140,6 +140,8 @@ class DataArguments:
         default_factory=lambda: {
             "spider": "./seq2seq/datasets/spider",
             "cosql": "./seq2seq/datasets/cosql",
+            "cosql_response": "./seq2seq/datasets/cosql_response",
+            "cosql_intent": "./seq2seq/datasets/cosql_intent",
             "spider_realistic": "./seq2seq/datasets/spider_realistic",
             "spider_syn": "./seq2seq/datasets/spider_syn",
             "spider_dk": "./seq2seq/datasets/spider_dk"
@@ -157,6 +159,8 @@ class DataArguments:
             "spider": "./seq2seq/metrics/spider",
             "spider_realistic" : "./seq2seq/metrics/spider",
             "cosql": "./seq2seq/metrics/cosql",
+            "cosql_response": "./seq2seq/metrics/cosql_response",
+            "cosql_intent": "./seq2seq/metrics/cosql_intent",
             "spider_syn":"./seq2seq/metrics/spider",
             "spider_dk":"./seq2seq/metrics/spider"
         },

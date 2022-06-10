@@ -94,8 +94,7 @@ class CoSQL(datasets.GeneratorBasedBuilder):
         features = datasets.Features(
             {
                 "query": datasets.Value("string"),
-                "utterances": datasets.features.Sequence(datasets.Value("string")),
-                "turn_idx": datasets.Value("int32"),
+                "utterances": datasets.Value("string"),
                 "db_id": datasets.Value("string"),
                 "db_path": datasets.Value("string"),
                 "db_table_names": datasets.features.Sequence(datasets.Value("string")),
@@ -131,14 +130,14 @@ class CoSQL(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.TRAIN,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_train.json",
+                    "data_filepath": downloaded_filepath + "/cosql_dataset/system_response_generation/cosql_train.json",
                     "db_path": downloaded_filepath + "/cosql_dataset/database",
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_dev.json",
+                    "data_filepath": downloaded_filepath + "/cosql_dataset/system_response_generation/cosql_dev.json",
                     "db_path": downloaded_filepath + "/cosql_dataset/database",
                 },
             ),
@@ -175,19 +174,8 @@ class CoSQL(datasets.GeneratorBasedBuilder):
                 }
 
                 yield idx, {
-                    "utterances": [sample["final"]["utterance"]],
-                    "query": sample["final"]["query"],
-                    "turn_idx": -1,
+                    "utterances": sample["response"],
+                    "query": sample["query"],
                     **db_info,
                 }
                 idx += 1
-                utterances = []
-                for turn_idx, turn in enumerate(sample["interaction"]):
-                    utterances.extend((utterance.strip() for utterance in turn["utterance"].split(sep="|")))
-                    yield idx, {
-                        "utterances": list(utterances),
-                        "query": turn["query"],
-                        "turn_idx": turn_idx,
-                        **db_info,
-                    }
-                    idx += 1

@@ -75,7 +75,7 @@ _LICENSE = "CC BY-SA 4.0"
 _URL = "../../../dataset_files/cosql_dataset.zip"
 
 
-class CoSQL(datasets.GeneratorBasedBuilder):
+class CoSQLIntent(datasets.GeneratorBasedBuilder):
     VERSION = datasets.Version("1.0.0")
 
     BUILDER_CONFIGS = [
@@ -93,9 +93,8 @@ class CoSQL(datasets.GeneratorBasedBuilder):
     def _info(self):
         features = datasets.Features(
             {
-                "query": datasets.Value("string"),
-                "utterances": datasets.features.Sequence(datasets.Value("string")),
-                "turn_idx": datasets.Value("int32"),
+                "intent": datasets.Value("string"),
+                "utterances": datasets.Value("string"),
                 "db_id": datasets.Value("string"),
                 "db_path": datasets.Value("string"),
                 "db_table_names": datasets.features.Sequence(datasets.Value("string")),
@@ -131,14 +130,14 @@ class CoSQL(datasets.GeneratorBasedBuilder):
             datasets.SplitGenerator(
                 name=datasets.Split.TRAIN,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_train.json",
+                    "data_filepath": downloaded_filepath + "/cosql_dataset/user_intent_prediction/cosql_train.json",
                     "db_path": downloaded_filepath + "/cosql_dataset/database",
                 },
             ),
             datasets.SplitGenerator(
                 name=datasets.Split.VALIDATION,
                 gen_kwargs={
-                    "data_filepath": downloaded_filepath + "/cosql_dataset/sql_state_tracking/cosql_dev.json",
+                    "data_filepath": downloaded_filepath + "/cosql_dataset/user_intent_prediction/cosql_dev.json",
                     "db_path": downloaded_filepath + "/cosql_dataset/database",
                 },
             ),
@@ -174,20 +173,15 @@ class CoSQL(datasets.GeneratorBasedBuilder):
                     ],
                 }
 
+                intent = sample["intent"]
+                if intent == None:
+                    print("Correct!")
+                    cor_intent = ["INFORM_SQL"]
+                else:
+                    cor_intent = intent
                 yield idx, {
-                    "utterances": [sample["final"]["utterance"]],
-                    "query": sample["final"]["query"],
-                    "turn_idx": -1,
+                    "utterances": sample["utterance"],
+                    "intent": cor_intent[0] if cor_intent[0] is not None else "INFORM_SQL",
                     **db_info,
                 }
                 idx += 1
-                utterances = []
-                for turn_idx, turn in enumerate(sample["interaction"]):
-                    utterances.extend((utterance.strip() for utterance in turn["utterance"].split(sep="|")))
-                    yield idx, {
-                        "utterances": list(utterances),
-                        "query": turn["query"],
-                        "turn_idx": turn_idx,
-                        **db_info,
-                    }
-                    idx += 1

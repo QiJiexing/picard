@@ -18,6 +18,8 @@ from seq2seq.utils.dataset import (
 )
 from seq2seq.utils.spider import spider_add_serialized_schema, spider_pre_process_function
 from seq2seq.utils.cosql import cosql_add_serialized_schema, cosql_pre_process_function
+from seq2seq.utils.cosql_response import cosql_response_add_serialized_schema, cosql_response_pre_process_function
+from seq2seq.utils.cosql_intent import cosql_intent_add_serialized_schema, cosql_intent_pre_process_function
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,43 @@ def load_dataset(
         data_training_args=data_training_args,
         tokenizer=tokenizer,
     )
+
+    _cosql_response_dataset_dict: Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
+        path=data_args.dataset_paths["cosql_response"], cache_dir=model_args.cache_dir
+    )
+    _cosql_response_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
+        path=data_args.metric_paths["cosql_response"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
+    )
+    _cosql_response_add_serialized_schema = lambda ex: cosql_response_add_serialized_schema(
+        ex=ex,
+        data_training_args=data_training_args,
+    )
+    _cosql_response_pre_process_function = lambda batch, max_source_length, max_target_length: cosql_response_pre_process_function(
+        batch=batch,
+        max_source_length=max_source_length,
+        max_target_length=max_target_length,
+        data_training_args=data_training_args,
+        tokenizer=tokenizer,
+    )
+
+    _cosql_intent_dataset_dict: Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
+        path=data_args.dataset_paths["cosql_intent"], cache_dir=model_args.cache_dir
+    )
+    _cosql_intent_metric: Callable[[], Metric] = lambda: datasets.load.load_metric(
+        path=data_args.metric_paths["cosql_intent"], config_name=data_args.metric_config, test_suite_db_dir=data_args.test_suite_db_dir
+    )
+    _cosql_intent_add_serialized_schema = lambda ex: cosql_intent_add_serialized_schema(
+        ex=ex,
+        data_training_args=data_training_args,
+    )
+    _cosql_intent_pre_process_function = lambda batch, max_source_length, max_target_length: cosql_intent_pre_process_function(
+        batch=batch,
+        max_source_length=max_source_length,
+        max_target_length=max_target_length,
+        data_training_args=data_training_args,
+        tokenizer=tokenizer,
+    )
+
     #adding spider_realistic dataset, metric, using schema and preprocess funtions of spider as it is
     _spider_realistic_dataset_dict : Callable[[], DatasetDict] = lambda: datasets.load.load_dataset(
         path=data_args.dataset_paths['spider_realistic'], cache_dir=model_args.cache_dir
@@ -118,6 +157,22 @@ def load_dataset(
             dataset_dict=_cosql_dataset_dict(),
             add_serialized_schema=_cosql_add_serialized_schema,
             pre_process_function=_cosql_pre_process_function,
+            **_prepare_splits_kwargs,
+        )
+    elif data_args.dataset == "cosql_response":
+        metric = _cosql_response_metric()
+        dataset_splits = prepare_splits(
+            dataset_dict=_cosql_response_dataset_dict(),
+            add_serialized_schema=_cosql_response_add_serialized_schema,
+            pre_process_function=_cosql_response_pre_process_function,
+            **_prepare_splits_kwargs,
+        )
+    elif data_args.dataset == "cosql_intent":
+        metric = _cosql_intent_metric()
+        dataset_splits = prepare_splits(
+            dataset_dict=_cosql_intent_dataset_dict(),
+            add_serialized_schema=_cosql_intent_add_serialized_schema,
+            pre_process_function=_cosql_intent_pre_process_function,
             **_prepare_splits_kwargs,
         )
     elif data_args.dataset == "spider_realistic":

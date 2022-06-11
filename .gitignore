@@ -143,9 +143,13 @@ gen-py3/picard/*
 dist-newstyle
 
 # Modelling artifacts
+*.zip
 train/*
 eval/*
 transformers_cache/*
+wandb/*
+dataset_files/*
+experiment/*
 wandb/*
 database/*
 .DS_Store

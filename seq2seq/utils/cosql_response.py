@@ -9,13 +9,14 @@ from seq2seq.utils.trainer import Seq2SeqTrainer, EvalPrediction
 
 def cosql_response_get_input(
     query: str,
+    history: str,
     serialized_schema: str,
     prefix: str,
     normalize_query: bool,
 ) -> str:
     # "[prefix] [query] [value] || [serialized schema]"
     _normalize = normalize if normalize_query else (lambda x: x)
-    return prefix + _normalize(query).strip() + " || " + serialized_schema.strip() 
+    return prefix + history + " | " + _normalize(query).strip() + " || " + serialized_schema.strip() 
 
 
 def cosql_response_get_target(
@@ -56,17 +57,27 @@ def cosql_response_pre_process_function(
     prefix = data_training_args.source_prefix if data_training_args.source_prefix is not None else ""
 
     inputs = [
-        cosql_response_get_input(query=query, serialized_schema=serialized_schema, prefix=prefix, normalize_query=data_training_args.normalize_query)
-        for query, serialized_schema in zip(batch["query"], batch["serialized_schema"])
+        cosql_response_get_input(query=query, history=history, serialized_schema=serialized_schema, prefix=prefix, normalize_query=data_training_args.normalize_query)
+        for query, history, serialized_schema in zip(batch["query"], batch["serialized_schema"], batch["history"])
     ]
 
+    # model_inputs: dict = tokenizer(
+    #     inputs,
+    #     max_length=max_source_length,
+    #     padding=False,
+    #     truncation=True,
+    #     return_overflowing_tokens=False,
+    # )
     model_inputs: dict = tokenizer(
         inputs,
         max_length=max_source_length,
         padding=False,
-        truncation=True,
+        truncation=False,
         return_overflowing_tokens=False,
     )
+    for k,v in model_inputs.items():
+        for i in range(len(v)):
+            v[i] = v[i][-512:]
 
     targets = [
         cosql_response_get_target(
@@ -105,6 +116,7 @@ class CoSQLResponseTrainer(Seq2SeqTrainer):
             {
                 "query": x["query"],
                 "utterances": x["utterances"],
+                "history": x["history"],
                 "context": context,
                 "label": label,
                 "db_id": x["db_id"],

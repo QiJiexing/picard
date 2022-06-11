@@ -80,6 +80,7 @@ class CoSQLResponse(datasets.Metric):
                     "predictions": datasets.Value("string"),
                     "references": {
                         "query": datasets.Value("string"),
+                        "history": datasets.Value("string"),
                         "utterances": datasets.Value("string"),
                         "context": datasets.Value("string"),
                         "label": datasets.Value("string"),

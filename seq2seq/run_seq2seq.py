@@ -153,6 +153,21 @@ def main() -> None:
         tokenizer=tokenizer,
     )
 
+    # To save dataset pickle
+    # import pickle
+    # print(type(dataset_splits))
+    # print(dataset_splits.train_split.dataset[0])
+    # train_dataset = [dataset_splits.train_split.dataset[i] for i in range(len(dataset_splits.train_split.dataset))]
+    # eval_dataset = [dataset_splits.eval_split.dataset[i] for i in range(len(dataset_splits.eval_split.dataset))]
+    # new_dataset_splits = {
+    #     "train": train_dataset,
+    #     "dev": eval_dataset
+    # }
+    # pickle.dump(new_dataset_splits, open("/home/jxqi/unified_cosql/data/0611_reponse_add_all.pkl", "wb"))
+    # print("save")
+    # os._exit()
+
+
     # Initialize Picard if necessary
     with PicardLauncher() if picard_args.launch_picard and training_args.local_rank <= 0 else nullcontext(None):
         # Get Picard model class wrapper

@@ -10,8 +10,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-print("change path")
-sys.path.append('/home/jxqi/unified_cosql/picard') # 这里填写你自己下载的picard的路径
+# ==============================Change Path=======================================
+import os
+
+abs_path = os.path.abspath(sys.argv[0])
+dir_path = abs_path.replace("/seq2seq/run_seq2seq.py", "")
+sys.path.append(dir_path)
+# ================================================================================
 
 import os
 import json

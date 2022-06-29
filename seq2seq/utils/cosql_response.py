@@ -7,16 +7,63 @@ from seq2seq.utils.dataset import DataTrainingArguments, normalize, serialize_sc
 from seq2seq.utils.trainer import Seq2SeqTrainer, EvalPrediction
 
 
+# def cosql_response_get_input(
+#     query: str,
+#     history: str,
+#     serialized_schema: str,
+#     prefix: str,
+#     normalize_query: bool,
+# ) -> str:
+#     # "[prefix] [query] [value] || [serialized schema]"
+#     _normalize = normalize if normalize_query else (lambda x: x)
+#     return prefix + history + " | " + _normalize(query).strip() + " || " + serialized_schema.strip() 
 def cosql_response_get_input(
-    query: str,
-    history: str,
+    queries: list,
+    questions: list,
+    results: list,
     serialized_schema: str,
     prefix: str,
     normalize_query: bool,
+    use_question: str,
+    use_question_result: bool,
+    use_gold_query: bool,
 ) -> str:
-    # "[prefix] [query] [value] || [serialized schema]"
     _normalize = normalize if normalize_query else (lambda x: x)
-    return prefix + history + " | " + _normalize(query).strip() + " || " + serialized_schema.strip() 
+
+    if len(questions) < 1:
+        final_context = _normalize(queries[0]).strip()
+    else:
+        query, question, result = queries[-1], questions[-1], results[-1]
+        question_blocks = []
+        
+        if use_question == "None":
+            context = ""
+            if use_question_result:
+                context = _normalize(query).strip() + " | " + result 
+            else:
+                context = _normalize(query).strip()
+            question_blocks.append(context)
+        else:   
+            if use_question == "current":
+                total_number = 1
+            elif use_question == "last":
+                total_number = 2
+            elif use_question == "all":
+                total_number = len(queries)
+            for i, (qes, qry, res) in enumerate(zip(questions[:total_number], queries[:total_number], results[:total_number])):
+                context = qes
+                if i==total_number-1:
+                    context = context+ " | " + _normalize(query).strip()
+                else:
+                    if use_gold_query:
+                        context = context+ " | " + _normalize(query).strip()
+                if use_question_result:
+                    context = context+ " | " + res
+                question_blocks.append(context)
+                
+        final_context = " || ".join(question_blocks)
+    
+    return prefix + final_context + " || " + serialized_schema.strip() 
 
 
 def cosql_response_get_target(
@@ -57,17 +104,20 @@ def cosql_response_pre_process_function(
     prefix = data_training_args.source_prefix if data_training_args.source_prefix is not None else ""
 
     inputs = [
-        cosql_response_get_input(query=query, history=history, serialized_schema=serialized_schema, prefix=prefix, normalize_query=data_training_args.normalize_query)
-        for query, history, serialized_schema in zip(batch["query"], batch["serialized_schema"], batch["history"])
+        cosql_response_get_input(
+            queries=queries,
+            questions=questions,
+            results=results,
+            serialized_schema = serialized_schema,
+            prefix=prefix,
+            normalize_query=data_training_args.normalize_query,
+            use_question=data_training_args.use_question,
+            use_question_result=data_training_args.use_question_result,
+            use_gold_query=data_training_args.use_gold_query,
+        ) 
+        for queries, serialized_schema, questions, results in zip(batch["queries"], batch["serialized_schema"], batch["questions"], batch["results"])
     ]
 
-    # model_inputs: dict = tokenizer(
-    #     inputs,
-    #     max_length=max_source_length,
-    #     padding=False,
-    #     truncation=True,
-    #     return_overflowing_tokens=False,
-    # )
     model_inputs: dict = tokenizer(
         inputs,
         max_length=max_source_length,
@@ -75,9 +125,6 @@ def cosql_response_pre_process_function(
         truncation=False,
         return_overflowing_tokens=False,
     )
-    for k,v in model_inputs.items():
-        for i in range(len(v)):
-            v[i] = v[i][-512:]
 
     targets = [
         cosql_response_get_target(
@@ -116,7 +163,9 @@ class CoSQLResponseTrainer(Seq2SeqTrainer):
             {
                 "query": x["query"],
                 "utterances": x["utterances"],
-                "history": x["history"],
+                "questions": x["questions"],
+                "queries": x["queries"],
+                "results": x["results"],
                 "context": context,
                 "label": label,
                 "db_id": x["db_id"],

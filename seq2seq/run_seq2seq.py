@@ -168,7 +168,7 @@ def main() -> None:
     #     "train": train_dataset,
     #     "dev": eval_dataset
     # }
-    # pickle.dump(new_dataset_splits, open("/home/jxqi/unified_cosql/data/0611_reponse_add_all.pkl", "wb"))
+    # pickle.dump(new_dataset_splits, open("/home/jxqi/unified_cosql/data/0629_reponse_add_all.pkl", "wb"))
     # print("save")
     # os._exit()
 

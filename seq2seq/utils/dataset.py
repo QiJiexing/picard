@@ -125,6 +125,18 @@ class DataTrainingArguments:
         default=True,
         metadata={"help": "Whether or not to add the database id to the target. Needed for Picard."},
     )
+    use_question: str = field(
+        default="current",
+        metadata={"help": "Choose between ``None``, ``current``, ``last``, ``all``. "},
+    )
+    use_question_result: bool = field(
+        default=True,
+        metadata={"help": "Whether or not to add the SQL execulated result to the context."},
+    )
+    use_gold_query: bool = field(
+        default=True,
+        metadata={"help": "Whether or not to add the gold SQL query to the context."},
+    )
 
     def __post_init__(self):
         if self.val_max_target_length is None:

@@ -94,7 +94,9 @@ class CoSQL(datasets.GeneratorBasedBuilder):
         features = datasets.Features(
             {
                 "query": datasets.Value("string"),
-                "history": datasets.Value("string"),
+                "queries": datasets.features.Sequence(datasets.Value("string")),
+                "questions": datasets.features.Sequence(datasets.Value("string")),
+                "results": datasets.features.Sequence(datasets.Value("string")),
                 "utterances": datasets.Value("string"),
                 "db_id": datasets.Value("string"),
                 "db_path": datasets.Value("string"),
@@ -144,98 +146,18 @@ class CoSQL(datasets.GeneratorBasedBuilder):
             ),
         ]
 
-    # def get_history(self, db_id, query, dataset):
-    #     # with open(dataset_path, "r") as f:
-    #     #     dataset = json.load(f)
-    #         # add last question
-    #     def search_on_dialog(query, dialog_id, dataset):
-    #         import re
-    #         info = dataset[dialog_id]
-    #         turns = info['turns']
-    #         find_idx = -1
-    #         for turn in turns:
-    #             isSQL = turn.get("isSql", False)
-    #             if isSQL:
-    #                 q = query.lower()
-    #                 s = turn['rawSql'].lower()
-    #                 consice_q = re.sub('[\W_]+', '', q)
-    #                 consice_s = re.sub('[\W_]+', '', s)
-    #                 if consice_q == consice_s:
-    #                     find_idx = turn['turn_index']
-                        
-    #         if find_idx > 0:
-    #             # print("Find ")
-    #             return find_idx, turns[:find_idx]
-    #         else:
-    #             return None
-            
-    #     def search_on_database(query, db_id, db_id2dialog_id, dataset):
-    #         '''
-    #         Args:
-    #             query: the SQL query for response generation task
-    #             db_id: the database id
-    #             db_id2dialog_id: the mapping dict for database id to all dialog ids that belong to this db
-    #             dataset: all info json
-                
-    #         Return:
-    #             context: the dialog history context for the SQL
-                
-    #         '''
-    #         dialog_ids = db_id2dialog_id.get(db_id, None)
-    #         assert dialog_ids is not None
-    #         for dialog_id in dialog_ids:
-    #             result = search_on_dialog(query, dialog_id, dataset)
-    #             if result is None:
-    #                 context = None
-    #                 # print("Not found")
-    #             else:
-    #                 find_idx, history_info = result
-    #                 context = history_info[-1]["text"] 
-    #                 break
-    #         return context
-
-    # # test search_on_dialog func
-    #     from collections import defaultdict
-    #     db_id2dialog_id = defaultdict(list)
-    #     for dialog_id, info in dataset.items():
-    #         db_id = info['db_id']
-    #         # pprint(info)
-    #         db_id2dialog_id[db_id].append(dialog_id)
-    # # result = search_on_database(query, db_id, db_id2dialog_id, dataset)
-    #     history = None
-    #     for dialog_id in dataset.keys():
-    #         # print("query: ", query)
-    #         result = search_on_database(query, db_id, db_id2dialog_id, dataset)
-
-    #         if result is not None:
-    #             history = result
-    #             # print("history: ", history)
-    #             break
-    #     if history is None:
-    #         history = ""
-
-    #     print("history: ", history)
-    #     return history
-
     def _generate_examples(self, data_filepath, db_path):
         """This function returns the examples in the raw (text) form."""
         logger.info("generating examples from = %s", data_filepath)
         idx = 0 # indexing each training instance
-        all_info_filepath = data_filepath.replace("system_response_generation/cosql_dev.json", "cosql_all_info_dialogs.json").replace("system_response_generation/cosql_train.json", "cosql_all_info_dialogs.json")
         with open(data_filepath, encoding="utf-8") as f:
             cosql = json.load(f)
             if "train" in data_filepath:
-                # v1 means only last question will be added as history
-                # pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/train_context_v1.pkl"
-                # v2 means all previous questions will be added as history
-                pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/train_context_v2.pkl"
-            else:
-                # v1 means only last question will be added as history
-                # pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/dev_context_v1.pkl"
-                # v2 means all previous questions will be added as history
-                pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/dev_context_v2.pkl"
+                pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/train_context_all_info.pkl"
+            elif "dev" in data_filepath:
+                pkl_filepath = "/home/jxqi/unified_cosql/picard/dataset_files/dev_context_all_info.pkl"
             import pickle
-            history_l = pickle.load(open(pkl_filepath, "rb"))
+            all_info_l = pickle.load(open(pkl_filepath, "rb"))
             for sample in cosql:
                 db_id = sample["database_id"]
                 if db_id not in self.schema_cache:
@@ -260,13 +182,12 @@ class CoSQL(datasets.GeneratorBasedBuilder):
                     ],
                 }
 
-                # query = sample["query"]
-                # history = self.get_history(query, db_id, dataset)
-
                 yield idx, {
                     "utterances": sample["response"],
                     "query": sample["query"],
-                    "history": history_l[idx],
+                    "questions": all_info_l[idx].get("questions", list()),
+                    "queries": all_info_l[idx].get("queries", [sample["query"]]),
+                    "results": all_info_l[idx].get("results", list()),
                     **db_info,
                 }
                 idx += 1
